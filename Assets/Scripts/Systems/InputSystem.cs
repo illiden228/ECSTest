@@ -3,11 +3,14 @@ using UnityEngine;
 
 sealed class InputSystem : IEcsInitSystem, IEcsRunSystem
 {
-    private EcsWorld _world = null;
-    
+    private EcsWorld _world;
+    private Camera _camera;
+
     public void Init(IEcsSystems systems)
     {
         _world = systems.GetWorld ();
+        _camera = Camera.main;
+        var gameData = systems.GetShared<GameDataView>();
     }
     
     public void Run(IEcsSystems systems)
@@ -20,7 +23,15 @@ sealed class InputSystem : IEcsInitSystem, IEcsRunSystem
             foreach (var entity in filter)
             {
                 ref MovableComponent inputComponent = ref inputs.Get(entity);
-                inputComponent.TargetPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                var ray = _camera.ScreenPointToRay(Input.mousePosition);
+                RaycastHit[] hits = Physics.RaycastAll(ray);
+                foreach (var hit in hits)
+                {
+                    if (hit.collider.GetComponent<Floor>())
+                    {
+                        inputComponent.TargetPosition = hit.point;
+                    }
+                }
             }
         }
     }
